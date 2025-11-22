@@ -1,0 +1,2 @@
+# Exclude separate React applications from Next.js build
+leetcode_fetcher/
