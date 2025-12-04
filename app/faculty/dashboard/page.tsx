@@ -1475,6 +1475,7 @@ function CreatePollModal({
   const [showTemplateSelection, setShowTemplateSelection] = useState(true)
   const [currentStep, setCurrentStep] = useState(1)
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
+  const [autoDeleteDays, setAutoDeleteDays] = useState(2) // Default auto-delete days
 
 
   // Reset options when poll category changes in details step
@@ -1640,15 +1641,10 @@ function CreatePollModal({
 
       if (classError) throw classError
 
-      // Calculate auto-delete time based on poll category
+      // Use the user-set autoDeleteDays from state
       const now = new Date()
-      let autoDeleteDays = 2
       
-      if ((pollCategory === 'Attendance') || (pollCategory === 'CodeChef Attendance') || (pollCategory === 'Problems Solved')) {
-        autoDeleteDays = 1
-      }
-      
-      // Calculate auto-delete timestamp
+      // Calculate auto-delete timestamp using user-configured days
       const autoDeleteTime = new Date(now.getTime() + autoDeleteDays * 24 * 60 * 60 * 1000).toISOString()
 
       // Create deadline timestamp - if only date provided, set to 11:59pm of that date
@@ -1727,6 +1723,7 @@ function CreatePollModal({
       setScheduledDate('')
       setScheduledTime('')
       setLinkUrl('')
+      setAutoDeleteDays(2) // Reset to default
       setCurrentStep(1)
       setFormErrors({})
       onPollCreated()
@@ -1791,49 +1788,53 @@ function CreatePollModal({
               className="space-y-6"
             >
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {[
                   {
                     title: 'LeetCode Attendance',
                     category: 'Attendance',
                     icon: '📊',
-                    color: 'from-emerald-500 to-emerald-600',
-                    description: 'Track student attendance for LeetCode contests',
+                    color: 'from-amber-700 to-amber-800',
+                    description: 'Track LeetCode contest attendance',
+                    defaultDays: 1,
                     action: () => {
                       const now = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
                       setTitle(`LeetCode Attendance Weekly ${now}`)
                       setPollCategory('Attendance')
                       setContestType('weekly')
+                      setAutoDeleteDays(1)
                       setOptions(['Present', 'Absent'])
                       setCurrentStep(2)
+                    }
+                  },
+                  {
+                    title: 'G-Form Poll',
+                    category: 'G-Form Poll',
+                    icon: '📋',
+                    color: 'from-purple-600 to-purple-700',
+                    description: 'Link to Google Forms for surveys',
+                    defaultDays: 2,
+                    action: () => {
+                      setTitle('')
+                      setAutoDeleteDays(2)
+                      handleCategoryChange('G-Form Poll')
+                      setLinkUrl('')
                     }
                   },
                   {
                     title: 'CodeChef Attendance',
                     category: 'CodeChef Attendance',
-                    icon: '🏆',
-                    color: 'from-amber-500 to-amber-600',
-                    description: 'Track student attendance for CodeChef contests',
+                    icon: '🍳',
+                    color: 'from-gray-500 to-gray-600',
+                    description: 'Track CodeChef contest attendance',
+                    defaultDays: 1,
                     action: () => {
                       const now = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
                       setTitle(`CodeChef Attendance ${now}`)
                       setPollCategory('CodeChef Attendance')
                       setContestType(null)
+                      setAutoDeleteDays(1)
                       setOptions(['Present', 'Absent'])
-                      setCurrentStep(2)
-                    }
-                  },
-                  {
-                    title: 'Problems Solved',
-                    category: 'Problems Solved',
-                    icon: '🎯',
-                    color: 'from-purple-500 to-purple-600',
-                    description: 'Track number of problems solved by students',
-                    action: () => {
-                      const now = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                      setTitle(`Problems Solved ${now}`)
-                      setPollCategory('Problems Solved')
-                      setOptions(['0', '1', '2', '3', '4', 'Absent'])
                       setCurrentStep(2)
                     }
                   },
@@ -1842,9 +1843,11 @@ function CreatePollModal({
                     category: 'General Poll',
                     icon: '📝',
                     color: 'from-blue-500 to-blue-600',
-                    description: 'Create custom polls with your own questions',
+                    description: 'Create custom polls with questions',
+                    defaultDays: 2,
                     action: () => {
                       setTitle('')
+                      setAutoDeleteDays(2)
                       handleCategoryChange('General Poll')
                     }
                   },
@@ -1852,24 +1855,30 @@ function CreatePollModal({
                     title: 'Hackathon',
                     category: 'Hackathon',
                     icon: '🏆',
-                    color: 'from-green-500 to-green-600',
-                    description: 'Track hackathon participation and submissions',
+                    color: 'from-pink-500 to-pink-600',
+                    description: 'Track hackathon participation',
+                    defaultDays: 3,
                     action: () => {
                       setTitle('')
+                      setAutoDeleteDays(3)
                       handleCategoryChange('Hackathon')
                       setLinkUrl('')
                     }
                   },
                   {
-                    title: 'G-Form Poll',
-                    category: 'G-Form Poll',
-                    icon: '📋',
-                    color: 'from-orange-500 to-orange-600',
-                    description: 'Link to Google Forms for detailed surveys',
+                    title: 'Problems Solved',
+                    category: 'Problems Solved',
+                    icon: '🎯',
+                    color: 'from-green-500 to-green-600',
+                    description: 'Track problems solved by students',
+                    defaultDays: 1,
                     action: () => {
-                      setTitle('')
-                      handleCategoryChange('G-Form Poll')
-                      setLinkUrl('')
+                      const now = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                      setTitle(`Problems Solved ${now}`)
+                      setPollCategory('Problems Solved')
+                      setAutoDeleteDays(1)
+                      setOptions(['0', '1', '2', '3', '4', 'Absent'])
+                      setCurrentStep(2)
                     }
                   }
                 ].map((template) => (
@@ -1880,17 +1889,17 @@ function CreatePollModal({
                     disabled={isSubmitting}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative p-6 rounded-2xl bg-gradient-to-br ${template.color} text-white text-left transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg group`}
+                    className={`relative p-5 rounded-2xl bg-gradient-to-br ${template.color} text-white text-left transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg group`}
                   >
-                    <div className="flex items-start space-x-4">
-                      <div className="text-3xl">{template.icon}</div>
+                    <div className="flex items-start space-x-3">
+                      <div className="text-2xl">{template.icon}</div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-lg mb-1">{template.title}</h4>
-                        <p className="text-white/80 text-sm">{template.description}</p>
+                        <h4 className="font-semibold text-base mb-1">{template.title}</h4>
+                        <p className="text-white/80 text-xs">{template.description}</p>
                 </div>
               </div>
-                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
             </div>
@@ -1908,21 +1917,22 @@ function CreatePollModal({
               transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              {/* Poll Template Selection (Interactive) */}
-              <div className="flex space-x-2 mb-4">
+              {/* Poll Template Selection (Interactive) - Single Row */}
+              <div className="flex flex-wrap gap-2 mb-4">
                 {[
-                  { title: 'LeetCode Attendance', color: 'bg-emerald-500', value: 'Attendance' },
-                  { title: 'CodeChef Attendance', color: 'bg-amber-600', value: 'CodeChef Attendance' },
-                  { title: 'Problems Solved', color: 'bg-purple-500', value: 'Problems Solved' },
-                  { title: 'General Poll', color: 'bg-blue-500', value: 'General Poll' },
-                  { title: 'Hackathon', color: 'bg-green-500', value: 'Hackathon' },
-                  { title: 'G-Form Poll', color: 'bg-orange-500', value: 'G-Form Poll' }
+                  { title: 'LeetCode', color: 'bg-amber-700', value: 'Attendance', defaultDays: 1 },
+                  { title: 'G-Form', color: 'bg-purple-600', value: 'G-Form Poll', defaultDays: 2 },
+                  { title: 'CodeChef', color: 'bg-gray-500', value: 'CodeChef Attendance', defaultDays: 1 },
+                  { title: 'General', color: 'bg-blue-500', value: 'General Poll', defaultDays: 2 },
+                  { title: 'Hackathon', color: 'bg-pink-500', value: 'Hackathon', defaultDays: 3 },
+                  { title: 'Problems', color: 'bg-green-500', value: 'Problems Solved', defaultDays: 1 }
                 ].map((template) => (
                 <button
                     key={template.title}
                   type="button"
                     onClick={() => {
                       setPollCategory(template.value as any)
+                      setAutoDeleteDays(template.defaultDays)
                       // Update title based on template
                       const now = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
                       if (template.value === 'Attendance' && contestType) {
@@ -2167,113 +2177,85 @@ function CreatePollModal({
                     )}
                   </div>
 
-                  {/* Deadline Date */}
+                  {/* Deadline Date & Time - Compact Row */}
                   <div>
-                    <label htmlFor="deadlineDate" className="block text-sm font-medium text-white mb-2">
-                      Deadline Date (Optional)
-                    </label>
-                <input
-                      id="deadlineDate"
-                  type="date"
-                  value={deadlineDate}
-                      onChange={(e) => {
-                        setDeadlineDate(e.target.value)
-                        // Auto-set time to 11:59pm if date is provided but no time is set
-                        if (e.target.value && !deadlineTime) {
-                          setDeadlineTime('23:59')
-                        }
-                      }}
-                      className={`w-full px-4 py-3 bg-slate-800 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white transition-colors [color-scheme:dark] ${
-                        formErrors.deadlineDate ? 'border-red-500' : 'border-slate-600'
-                      }`}
-                  disabled={isSubmitting}
-                />
-                    {formErrors.deadlineDate && (
-                      <p className="mt-2 text-sm text-red-400">{formErrors.deadlineDate}</p>
-                    )}
-              </div>
+                    <label className="block text-sm font-medium text-white mb-2">Deadline (Optional)</label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="date"
+                        value={deadlineDate}
+                        onChange={(e) => {
+                          setDeadlineDate(e.target.value)
+                          if (e.target.value && !deadlineTime) setDeadlineTime('23:59')
+                        }}
+                        className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white text-sm [color-scheme:dark]"
+                        disabled={isSubmitting}
+                      />
+                      <input
+                        type="time"
+                        value={deadlineTime}
+                        onChange={(e) => setDeadlineTime(e.target.value)}
+                        className="w-24 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white text-sm [color-scheme:dark]"
+                        disabled={isSubmitting}
+                      />
+                      {(deadlineDate || deadlineTime) && (
+                        <button
+                          type="button"
+                          onClick={() => { setDeadlineDate(''); setDeadlineTime('') }}
+                          className="px-2 text-red-400 hover:text-red-300"
+                        >✕</button>
+                      )}
+                    </div>
+                  </div>
 
-                  {/* Deadline Time (Optional) */}
-              <div>
-                    <label htmlFor="deadlineTime" className="block text-sm font-medium text-white mb-2">
-                      Deadline Time (Optional)
-                    </label>
-                <div className="relative">
-                  <input
-                      id="deadlineTime"
-                  type="time"
-                  value={deadlineTime}
-                  onChange={(e) => setDeadlineTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white transition-colors [color-scheme:dark] pr-10"
-                  disabled={isSubmitting}
-                />
-                  {deadlineTime && (
-                    <button
-                      type="button"
-                      onClick={() => setDeadlineTime('')}
-                      disabled={isSubmitting}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-
-                  {/* Scheduled Date */}
+                  {/* Future Polls (Schedule) - Compact Row */}
                   <div>
-                    <label htmlFor="scheduledDate" className="block text-sm font-medium text-white mb-2">
-                      Schedule Publication (Optional)
-                    </label>
-                <input
-                      id="scheduledDate"
-                  type="date"
-                  value={scheduledDate}
-                      onChange={(e) => {
-                        setScheduledDate(e.target.value)
-                        // Auto-set time to start of day if date is provided but no time is set
-                        if (e.target.value && !scheduledTime) {
-                          setScheduledTime('00:00')
-                        }
-                      }}
-                      className={`w-full px-4 py-3 bg-slate-800 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white transition-colors [color-scheme:dark] ${
-                        formErrors.scheduledDate ? 'border-red-500' : 'border-slate-600'
-                      }`}
-                  disabled={isSubmitting}
-                />
-                    {formErrors.scheduledDate && (
-                      <p className="mt-2 text-sm text-red-400">{formErrors.scheduledDate}</p>
-                    )}
-                    <p className="mt-1 text-xs text-slate-400">Poll will only be visible to students from this date</p>
-              </div>
+                    <label className="block text-sm font-medium text-white mb-2">Future Polls (Optional)</label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="date"
+                        value={scheduledDate}
+                        onChange={(e) => {
+                          setScheduledDate(e.target.value)
+                          if (e.target.value && !scheduledTime) setScheduledTime('00:00')
+                        }}
+                        className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 text-white text-sm [color-scheme:dark]"
+                        disabled={isSubmitting}
+                      />
+                      <input
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                        className="w-24 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 text-white text-sm [color-scheme:dark]"
+                        disabled={isSubmitting}
+                      />
+                      {(scheduledDate || scheduledTime) && (
+                        <button
+                          type="button"
+                          onClick={() => { setScheduledDate(''); setScheduledTime('') }}
+                          className="px-2 text-red-400 hover:text-red-300"
+                        >✕</button>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">Poll visible to students from this date/time</p>
+                  </div>
 
-                  {/* Scheduled Time (Optional) */}
-              <div>
-                    <label htmlFor="scheduledTime" className="block text-sm font-medium text-white mb-2">
-                      Schedule Time (Optional)
-                    </label>
-                <div className="relative">
-                  <input
-                      id="scheduledTime"
-                  type="time"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white transition-colors [color-scheme:dark] pr-10"
-                  disabled={isSubmitting}
-                />
-                  {scheduledTime && (
-                    <button
-                      type="button"
-                      onClick={() => setScheduledTime('')}
+                  {/* Auto-Delete Days */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Auto-Delete After</label>
+                    <select
+                      value={autoDeleteDays}
+                      onChange={(e) => setAutoDeleteDays(parseInt(e.target.value))}
+                      className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 text-white text-sm"
                       disabled={isSubmitting}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
                     >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                    <p className="mt-1 text-xs text-slate-400">Exact time poll becomes visible</p>
-              </div>
+                      {[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(day => (
+                        <option key={day} value={day}>{day} {day === 1 ? 'day' : 'days'}</option>
+                      ))}
+                      <option value={1000}>Permanent</option>
+                    </select>
+                    <p className="mt-1 text-xs text-slate-400">Poll will be automatically deleted after this period</p>
+                  </div>
 
 
                   {/* Text Response Field for Absent Students - Only for Attendance templates */}
@@ -2340,163 +2322,92 @@ function CreatePollModal({
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
+              {/* Header */}
               <div className="flex items-center justify-between">
-            <div>
-                  <h3 className="text-xl font-semibold text-white mb-1">Review & Create</h3>
-                  <p className="text-slate-400">Review your poll details before creating</p>
-                </div>
+                <h3 className="text-3xl font-bold text-white">Review Poll</h3>
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-700"
+                  className="text-slate-400 hover:text-white text-base flex items-center gap-1"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  <span>Back</span>
+                  Back
                 </button>
               </div>
 
-              {/* Compact Review Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Left Column */}
-              <div className="space-y-4">
-                  {/* Poll Info */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h4 className="text-md font-medium text-white mb-3">Poll Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Title:</span>
-                        <span className="text-white text-right max-w-[200px] truncate">{title}</span>
-                    </div>
-                      <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Category:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${
-                          pollCategory === 'Attendance' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                          pollCategory === 'CodeChef Attendance' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                          pollCategory === 'Problems Solved' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
-                          pollCategory === 'General Poll' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
-                          pollCategory === 'Hackathon' ? 'bg-green-500/20 text-green-300 border-green-500/40' :
-                          pollCategory === 'G-Form Poll' ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
-                          'bg-slate-500/20 text-slate-300 border-slate-500/40'
-                        }`}>
-                          {pollCategory}
-                        </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Target:</span>
-                      <span className="text-white">{targetGender === 'all' ? 'All Students' : targetGender === 'boys' ? 'Boys Only' : 'Girls Only'}</span>
-                    </div>
-                    {contestType && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Contest Type:</span>
-                        <span className="text-white">{contestType.charAt(0).toUpperCase() + contestType.slice(1)}</span>
+              {/* Main Review Card */}
+              <div className="bg-slate-800 rounded-2xl p-6 border-2 border-slate-600">
+                {/* Title with Category Badge */}
+                <div className="flex items-start justify-between gap-4 mb-6">
+                  <p className="text-xl font-bold text-white flex-1">{title}</p>
+                  <span className={`px-4 py-2 rounded-lg text-base font-bold ${
+                    pollCategory === 'Attendance' ? 'bg-amber-600 text-white' :
+                    pollCategory === 'CodeChef Attendance' ? 'bg-gray-500 text-white' :
+                    pollCategory === 'Problems Solved' ? 'bg-green-500 text-white' :
+                    pollCategory === 'General Poll' ? 'bg-blue-500 text-white' :
+                    pollCategory === 'Hackathon' ? 'bg-pink-500 text-white' :
+                    pollCategory === 'G-Form Poll' ? 'bg-purple-600 text-white' :
+                    'bg-slate-500 text-white'
+                  }`}>
+                    {pollCategory}
+                  </span>
+                </div>
+
+                  {/* Two Info Boxes */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Options Box */}
+                    <div className="bg-blue-600 rounded-lg p-4">
+                      <p className="text-sm font-bold text-white mb-2">📋 Options</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {options.filter(opt => opt.trim() !== '').map((option, index) => (
+                          <span key={index} className="px-2 py-1 bg-white/20 rounded text-sm font-medium text-white">{option}</span>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                  {/* Poll Options */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h4 className="text-md font-medium text-white mb-3">Options</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {options.filter(opt => opt.trim() !== '').map((option, index) => (
-                        <div key={index} className="flex items-center space-x-2 bg-slate-600/50 rounded-lg px-3 py-1">
-                          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white">
-                            {index + 1}
-                          </div>
-                          <span className="text-slate-200 text-sm">{option}</span>
-                        </div>
-                      ))}
                     </div>
-                  </div>
-                </div>
 
-                {/* Right Column */}
-                <div className="space-y-4">
-                  {/* Link for G-Form Poll and Hackathon */}
-                  {(pollCategory === 'G-Form Poll' || pollCategory === 'Hackathon') && (
-                    <div className="bg-slate-700/50 rounded-xl p-4">
-                      <h4 className="text-md font-medium text-white mb-3">
-                        {pollCategory === 'G-Form Poll' ? 'G-Form Link' : 'Hackathon Link'}
-                      </h4>
-                      <div className="flex items-center space-x-2">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                        <span className="text-slate-200 text-sm truncate">{gFormLink || 'No link provided'}</span>
-                </div>
-                </div>
-                  )}
-
-                  {/* Deadline */}
-                {deadlineDate && (
-                    <div className="bg-slate-700/50 rounded-xl p-4">
-                      <h4 className="text-md font-medium text-white mb-3">Deadline</h4>
-                      <div className="flex items-center space-x-2">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                        <span className="text-slate-200 text-sm">
-                        {new Date(deadlineDate).toLocaleDateString()}
-                        {deadlineTime && ` at ${deadlineTime}`}
-                      </span>
-              </div>
-            </div>
-          )}
-
-                  {/* Scheduled Publication */}
-                {scheduledDate && (
-                    <div className="bg-slate-700/50 rounded-xl p-4">
-                      <h4 className="text-md font-medium text-white mb-3">Scheduled Publication</h4>
-                      <div className="flex items-center space-x-2">
-                        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                        <span className="text-slate-200 text-sm">
-                        Poll visible from {new Date(scheduledDate).toLocaleDateString()}
-                        {scheduledTime && ` at ${scheduledTime}`}
-                      </span>
-              </div>
-                      <p className="text-xs text-slate-400 mt-1">Students will see this poll only after this time</p>
-            </div>
-          )}
-
-                  {/* Auto-Delete Information */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h4 className="text-md font-medium text-white mb-3">Auto-Delete</h4>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span className="text-slate-200 text-sm">
-                        {(() => {
-                          const autoDeleteDays = (pollCategory === 'Attendance' || pollCategory === 'CodeChef Attendance' || pollCategory === 'Problems Solved') ? 1 : 2
-                          const baseDate = deadlineDate ? new Date(deadlineDate) : new Date()
-                          const autoDeleteDate = new Date(baseDate.getTime() + autoDeleteDays * 24 * 60 * 60 * 1000)
-                          return `After ${autoDeleteDays} day${autoDeleteDays > 1 ? 's' : ''} (${autoDeleteDate.toLocaleDateString()})`
-                        })()}
-                      </span>
+                    {/* Timing Box */}
+                    <div className="bg-purple-600 rounded-lg p-4">
+                      <p className="text-sm font-bold text-white mb-2">⏰ Timing</p>
+                      <div className="space-y-1 text-sm">
+                        {deadlineDate && (
+                          <p className="text-white">
+                            <span className="opacity-80">Deadline:</span> {new Date(deadlineDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}{deadlineTime && ` ${deadlineTime}`}
+                          </p>
+                        )}
+                        {scheduledDate && (
+                          <p className="text-white">
+                            <span className="opacity-80">Scheduled:</span> {new Date(scheduledDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}{scheduledTime && ` ${scheduledTime}`}
+                          </p>
+                        )}
+                        <p className="text-white">
+                          <span className="opacity-80">Auto-delete:</span> {autoDeleteDays === 1000 ? 'Never' : `${autoDeleteDays}d`}
+                        </p>
+                      </div>
                     </div>
+                  </div>                {/* Link (for G-Form/Hackathon) */}
+                {(pollCategory === 'G-Form Poll' || pollCategory === 'Hackathon') && gFormLink && (
+                  <div className="bg-green-600 rounded-xl p-4 mt-5">
+                    <p className="text-lg font-bold text-white mb-2">🔗 Link</p>
+                    <p className="text-white text-base truncate">{gFormLink}</p>
                   </div>
-
-
-                </div>
+                )}
               </div>
 
-              {/* Final Action Buttons */}
-              <div className="flex space-x-4 pt-6">
+              {/* Action Buttons */}
+              <div className="flex gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="flex-1 py-4 px-6 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-500 hover:to-slate-600 transition-all duration-200 font-semibold shadow-lg transform hover:scale-105"
+                  className="flex-1 py-4 px-6 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors font-bold text-xl"
                 >
-                  ← Back to Edit
+                  ← Edit
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg transform hover:scale-105 flex items-center justify-center space-x-3"
+                  className="flex-1 py-4 px-6 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 transition-all font-bold text-xl flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -2508,12 +2419,7 @@ function CreatePollModal({
                       <span>Creating...</span>
                     </>
                   ) : (
-                    <>
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>Create Poll</span>
-                    </>
+                    <span>Create Poll ✓</span>
                   )}
                 </button>
               </div>

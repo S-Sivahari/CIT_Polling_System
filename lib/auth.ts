@@ -25,18 +25,40 @@ export const authOptions: NextAuthOptions = {
       console.log('🔐 SignIn callback triggered:', { user, account, profile })
       
       if (account?.provider === 'google') {
-        const email = user.email
-        console.log('📧 Checking email domain:', email)
+        const email = user.email?.toLowerCase().trim()
+        console.log('📧 Checking if email exists in database:', email)
         
-        // Check if email ends with @citchennai.net
-        if (!email || !email.endsWith('@citchennai.net')) {
-          console.log('❌ Email domain not allowed:', email)
-          // Redirect to error page with invalid domain error
+        if (!email) {
+          console.log('❌ No email provided')
           return '/auth-error?type=invalid_domain'
         }
         
-        console.log('✅ Email domain allowed, proceeding with authentication')
-        return true
+        // Check if email exists in students or staffs table
+        try {
+          const { data: student } = await supabase
+            .from('students')
+            .select('reg_no')
+            .eq('email', email)
+            .single()
+          
+          const { data: staff } = await supabase
+            .from('staffs')
+            .select('id')
+            .eq('email', email)
+            .single()
+          
+          if (!student && !staff) {
+            console.log('❌ Email not found in database:', email)
+            return '/auth-error?type=not_found'
+          }
+          
+          console.log('✅ Email found in database, proceeding with authentication')
+          return true
+        } catch (error) {
+          console.error('🚨 Error checking email in database:', error)
+          // Allow sign in and let session callback handle validation
+          return true
+        }
       }
       return true
     },
@@ -58,16 +80,8 @@ export const authOptions: NextAuthOptions = {
         const email = session.user.email.toLowerCase().trim()
         console.log('🔍 Session callback - Checking email in database:', email)
         
-        // First check if email ends with @citchennai.net
-        if (!email.endsWith('@citchennai.net')) {
-          console.log('❌ Email domain not allowed in session:', email)
-          session.user.role = 'invalid_domain'
-          session.user.isValid = false
-          return session
-        }
-        
         try {
-          // Check if user is a student
+          // Check if user is a student FIRST (prioritize student over staff)
           const { data: student, error: studentError } = await supabase
             .from('students')
             .select('*')
@@ -76,17 +90,21 @@ export const authOptions: NextAuthOptions = {
           
           console.log('👨‍🎓 Student query result:', { student, studentError })
           
-          // Check if user is staff
-          const { data: staff, error: staffError } = await supabase
-            .from('staffs')
-            .select('*')
-            .eq('email', email)
-            .single()
-          
-          console.log('👨‍🏫 Staff query result:', { staff, staffError })
+          // Only check staff if NOT a student (student takes priority)
+          let staff = null
+          if (!student) {
+            const { data: staffData, error: staffError } = await supabase
+              .from('staffs')
+              .select('*')
+              .eq('email', email)
+              .single()
+            staff = staffData
+            console.log('👨‍🏫 Staff query result:', { staff, staffError })
+          }
           
           if (student) {
-            console.log('✅ Student found, setting role to student')
+            // PRIORITY: Student role takes precedence even if email exists in staff table
+            console.log('✅ Student found, setting role to student (takes priority over staff)')
             session.user.id = student.reg_no
             session.user.name = student.name
             session.user.role = 'student'
@@ -139,44 +157,47 @@ export const authOptions: NextAuthOptions = {
         console.log('🔑 JWT callback - No role in token, fetching from database')
         const email = (token.email as string).toLowerCase().trim()
         
-        if (email.endsWith('@citchennai.net')) {
-          try {
-            // Check if user is a student
-            const { data: student } = await supabase
-              .from('students')
-              .select('*')
-              .eq('email', email)
-              .single()
-            
-            // Check if user is staff
-            const { data: staff } = await supabase
+        try {
+          // Check if user is a student FIRST (prioritize student over staff)
+          const { data: student } = await supabase
+            .from('students')
+            .select('*')
+            .eq('email', email)
+            .single()
+          
+          // Only check staff if NOT a student (student takes priority)
+          let staff = null
+          if (!student) {
+            const { data: staffData } = await supabase
               .from('staffs')
               .select('*')
               .eq('email', email)
               .single()
-            
-            if (student) {
-              console.log('🔑 JWT callback - Student found, updating token')
-              token.id = student.reg_no
-              token.name = student.name  // Set database name
-              token.role = 'student'
-              token.reg_no = student.reg_no
-              token.department = student.department
-              token.section = student.section
-              token.class_id = student.class_id
-              token.isValid = true
-            } else if (staff) {
-              console.log('🔑 JWT callback - Staff found, updating token')
-              token.id = staff.id.toString()
-              token.name = staff.name    // Set database name
-              token.role = staff.designation === 'HOD' ? 'hod' : 'faculty'
-              token.department = staff.department
-              token.section = staff.section
-              token.isValid = true
-            }
-          } catch (error) {
-            console.error('🚨 JWT callback - Database query error:', error)
+            staff = staffData
           }
+          
+          if (student) {
+            // PRIORITY: Student role takes precedence
+            console.log('🔑 JWT callback - Student found, updating token (takes priority)')
+            token.id = student.reg_no
+            token.name = student.name  // Set database name
+            token.role = 'student'
+            token.reg_no = student.reg_no
+            token.department = student.department
+            token.section = student.section
+            token.class_id = student.class_id
+            token.isValid = true
+          } else if (staff) {
+            console.log('🔑 JWT callback - Staff found, updating token')
+            token.id = staff.id.toString()
+            token.name = staff.name    // Set database name
+            token.role = staff.designation === 'HOD' ? 'hod' : 'faculty'
+            token.department = staff.department
+            token.section = staff.section
+            token.isValid = true
+          }
+        } catch (error) {
+          console.error('🚨 JWT callback - Database query error:', error)
         }
       }
       
